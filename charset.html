@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>字符集编码 · 单页版</title>
+<style>
+  :root{--bg:#f6f8fa;--panel:#fff;--border:#e4e8ee;--text:#1f2937;--muted:#6b7280;--brand:#2f7d5f;--brand-soft:#eaf5f0;--code:#f2f4f7;--mono:'Cascadia Mono',Consolas,'Courier New',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif;padding-bottom:60px}
+  header{position:sticky;top:0;z-index:10;background:rgba(246,248,250,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:16px 28px}
+  .htop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  h1{font-size:19px;font-weight:700}
+  .sub{color:var(--muted);font-size:12.5px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .search{position:relative;flex:1;max-width:440px;min-width:200px}
+  .search input{width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 38px 0 12px;background:#fff;font-size:13.5px;outline:none}
+  .search input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .search .k{position:absolute;right:10px;top:9px;font:11px var(--mono);color:var(--muted);border:1px solid var(--border);border-radius:5px;padding:1px 5px;background:#fff}
+  .filters{display:flex;gap:7px;flex-wrap:wrap}
+  .f{border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 14px;font-size:12.5px;color:#43506b;cursor:pointer;user-select:none}
+  .f.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .f:hover{border-color:var(--brand)}
+  .wrap{max-width:1040px;margin:22px auto 0;padding:0 28px}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+  h2{font-size:13.5px;font-weight:600;padding:12px 16px;background:#fbfcfd;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  h2 .c{font:11.5px var(--mono);color:#9aa4b2;font-weight:400}
+  .row{display:grid;grid-template-columns:132px 1fr;gap:14px;padding:11px 16px;border-bottom:1px solid #f0f2f5}
+  .row:last-child{border-bottom:0}
+  .row:hover{background:#fafcfb}
+  .code{font:600 13px var(--mono);color:#1f2d3d;display:flex;align-items:center;gap:6px;word-break:break-all}
+  .code .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .name{font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .name .en{font:12px var(--mono);color:#8a94a3;font-weight:400}
+  .tag{font-size:11px;padding:1px 7px;border-radius:5px;background:#eef2f6;color:#5b6675}
+  .tag.dav{background:#fdf1e6;color:#a56a26}
+  .tag.hot{background:var(--brand-soft);color:var(--brand)}
+  .desc{color:#4b5563;font-size:12.5px;margin-top:2px}
+  .empty{color:var(--muted);text-align:center;padding:36px;background:var(--panel);border:1px dashed var(--border);border-radius:12px}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);background:#1f2937;color:#fff;font-size:12.5px;padding:8px 16px;border-radius:999px;opacity:0;transition:.18s;pointer-events:none;z-index:99}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  mark{background:#fde68a;border-radius:3px;padding:0 1px}
+  @media (max-width:760px){.wrap{padding:0 14px}.row{grid-template-columns:96px 1fr;gap:10px}header{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <h1>字符集编码</h1>
+    <span class="sub">编码速查 · 选型建议 · 乱码排查 · 点击左侧名称复制</span>
+  </div>
+  <div class="bar">
+    <div class="search">
+      <input id="q" placeholder="搜索：UTF-8 / 简体中文 / 4 字节 / 乱码 / MySQL" autocomplete="off">
+      <span class="k">/</span>
+    </div>
+    <div class="filters" id="filters"></div>
+  </div>
+</header>
+
+<div class="wrap"><div id="body"></div></div>
+<div id="toast"></div>
+
+<script>
+const DATA = [
+  {cat:'Unicode 家族', color:'#4c8bf5', items:[
+    ['UTF-8','Unicode Transformation Format 8-bit','变长编码（1–4 字节）','ASCII 完全兼容，英文 1 字节、汉字 3 字节、emoji/生僻字 4 字节；Web、Linux、Git 的通用默认','常用'],
+    ['UTF-16','UTF-16 BE / LE','16 位变长（2 或 4 字节）','BMP 内字符 2 字节，增补平面用代理对 4 字节；Windows 内部（wchar_t）、Java String 的内存表示','常用'],
+    ['UTF-16LE','Little Endian','小端 UTF-16','低字节在前，Windows 默认（BOM：FF FE）','LE'],
+    ['UTF-16BE','Big Endian','大端 UTF-16','高字节在前，网络传输/Java class 文件常量池（BOM：FE FF）','BE'],
+    ['UTF-32','UTF-32 BE / LE','定长 4 字节','每个码点固定 4 字节，空间开销大，仅用于内部处理','定长'],
+    ['Unicode 码点','U+0000 – U+10FFFF','字符集本身（非编码）','共 17 个平面 × 65536 = 1,114,112 个码位；实际分配约 15 万个，含代理区 D800–DFFF 不可直接编码','码点'],
+    ['BOM','Byte Order Mark','字节序标记','EF BB BF（UTF-8，不推荐）、FF FE（UTF-16LE）、FE FF（UTF-16BE）；会导致脚本/配置首行异常，纯 UTF-8 场景应去掉','坑点']
+  ]},
+  {cat:'中文编码', color:'#c0392b', items:[
+    ['GB2312','GB 2312-1980','简体中文国标（双字节）','收录 6763 个汉字 + 682 个符号，仅覆盖常用字；不支持繁体与生僻字','国标'],
+    ['GBK','GBK 1.0 (1995)','简体扩展（双字节）','向下兼容 GB2312，收录 21003 个汉字，含繁体与生僻字；Windows 中文版 ANSI 代码页 936','常用'],
+    ['GB18030','GB 18030-2022','强制性国家标准','1/2/4 字节变长，覆盖 Unicode 全部码位；2023-08-01 实施，是中文环境的合规要求','强制国标'],
+    ['Big5','Big5 / CP950','繁体中文（双字节）','台湾/香港常用，收录约 1.3 万个繁体汉字；大陆侧常与之互转出现乱码','繁体'],
+    ['GBK 与 GB2312 区别','code page 936','兼容关系','GBK 是 GB2312 的超集；声明 GB2312 但写入 GBK 字符 → 部分生僻字变问号或截断','易错']
+  ]},
+  {cat:'西欧与通用编码', color:'#7c9bb5', items:[
+    ['ASCII','ANSI X3.4-1968','7 位字符集（0x00–0x7F）','共 128 个字符，含控制符、英文、数字、标点；所有主流编码均向下兼容它','基础'],
+    ['ISO-8859-1','Latin-1','西欧单字节编码','0x00–0xFF 一一对应 Unicode 前 256 个码点，永不报错（字节级透传），常被误当作默认值','Latin-1'],
+    ['ISO-8859-15','Latin-9','西欧单字节（修订）','相对 Latin-1 增加欧元符号 €、Œ œ Š š Ž ž 等','Latin-9'],
+    ['Windows-1252','CP1252','西欧单字节（微软）','0x80–0x9F 区间放可打印符号（如 € “ ” —），与 ISO-8859-1 不同；Windows 英文版 ANSI','CP1252']
+  ]},
+  {cat:'日韩编码', color:'#8a7cc4', items:[
+    ['Shift_JIS','SJIS / CP932','日文（双字节）','Windows 日文默认，1 字节假名 + 2 字节汉字；微软扩展版为 CP932','日文'],
+    ['EUC-JP','Extended Unix Code JP','日文（变长）','Unix/Linux 日文传统编码，2–3 字节','日文'],
+    ['ISO-2022-JP','JIS 编码','日文（7 位，带转义）','用 ESC 序列切换字符集，常用于邮件，ASCII 安全','邮件'],
+    ['EUC-KR','CP949','韩文（双字节）','收录 2350 个韩文音节，Windows 韩文 ANSI 代码页 949','韩文']
+  ]},
+  {cat:'选型建议（按场景）', color:'#2f7d5f', items:[
+    ['Web 页面 / API','UTF-8','统一 UTF-8','HTML 写 <meta charset="utf-8">，响应头 Content-Type: text/html; charset=utf-8 二者要一致','推荐'],
+    ['数据库（MySQL）','utf8mb4','不要用 utf8','MySQL 的 utf8 是 3 字节别名，存不了 emoji 与部分生僻字；8.0 默认 utf8mb4_0900_ai_ci','坑点'],
+    ['数据库（PostgreSQL/SQLite）','UTF-8','服务端编码','PG 建库时 ENCODING UTF8；SQLite 天然 UTF-8/UTF-16','推荐'],
+    ['Java 读写文件','StandardCharsets.UTF_8','显式指定','不要用 FileReader/FileWriter 无参构造，它取平台默认编码（中文 Windows 为 GBK）','坑点'],
+    ['Java 编译源码','-encoding UTF-8','javac 参数','否则中文注释/字符串在 GBK 平台编译出乱码；Maven 配 project.build.sourceEncoding','坑点'],
+    ['Windows 命令行','chcp 65001','切 UTF-8 代码页','PowerShell 5.1 需同时设 [Console]::OutputEncoding；否则输出中文乱码','坑点'],
+    ['Excel 打开 CSV','UTF-8 with BOM','加 BOM 才能识别','Excel 双击打开无 BOM 的 UTF-8 CSV 会按 ANSI(GBK) 解析导致中文乱码','坑点'],
+    ['压缩包文件名','UTF-8 或 GBK','Windows 与 mac 差异','Windows 资源管理器用 GBK 存文件名，mac/Linux 用 UTF-8，跨平台解压常见乱码','坑点'],
+    ['邮件正文','UTF-8 + quoted-printable','MIME 编码','主题用 =?UTF-8?B?...?=，正文声明 charset，避免 8bit 裸传','推荐'],
+    ['繁体环境','UTF-8 或 Big5','视历史系统','新系统一律 UTF-8；与台湾旧系统交换文件时确认 Big5/CP950','推荐'],
+    ['老旧国企/政务系统','GB18030','合规首选','GB18030-2022 为强制国标，等保/政务项目常要求支持','合规']
+  ]},
+  {cat:'乱码特征对照', color:'#d97706', items:[
+    ['æµ‹è¯•','UTF-8 被当 Latin-1 读','典型双重编码','每个汉字变 3 个西欧字符（æ å ç 类），修复：按 UTF-8 重新解码或 latin1→utf8 转码','现象'],
+    ['娴嬭瘯 / 浣犲ソ','UTF-8 被当 GBK 读','最常见的网页乱码','汉字数约为原来的 3/5，常出现在 Content-Type 缺失时；修复：声明 charset=utf-8','现象'],
+    ['锟斤拷','GBK 被当 UTF-8 读','不可逆损坏','GBK 双字节被 UTF-8 解码失败后替换为 U+FFFD（EF BF BD），再经一次转换形成“锟斤拷”，原内容已无法还原','现象'],
+    ['??? / 问号','目标编码不支持该字符','有损转换','如 GB2312 页写入生僻字、ASCII 管道处理中文；转换时已丢数据，需从源头重新导出','现象'],
+    ['口口口 / 方块','字体缺字或编码不支持','渲染层问题','编码正确但字体无对应字形（常见于生僻字、emoji 在旧字体）；换字体或用回退字体链','现象'],
+    ['烫烫烫 / 屯屯屯','未初始化内存','MSVC Debug 特征','0xCC 填充被当 GBK 显示；属程序 Bug，与字符集本身无关','现象'],
+    ['ï»¿ 开头','UTF-8 BOM 被当内容','BOM 残留','EF BB BF 在 Latin-1 下显示为 ï»¿；去除 BOM 或按 utf-8-sig 读取','现象']
+  ]}
+];
+
+const HOT_TAG = ['常用','强制国标','坑点'];
+const q = document.getElementById('q');
+const body = document.getElementById('body');
+const filters = document.getElementById('filters');
+let active = '全部';
+
+filters.innerHTML = ['全部','Unicode','中文','西欧','日韩','选型','乱码']
+  .map(f => `<span class="f${f==='全部'?' on':''}" data-f="${f}">${f}</span>`).join('');
+filters.addEventListener('click', e => {
+  const t = e.target.closest('[data-f]');
+  if(!t) return;
+  active = t.dataset.f;
+  [...filters.children].forEach(c => c.classList.toggle('on', c.dataset.f === active));
+  render();
+});
+
+const MAP = {'Unicode':'Unicode','中文':'中文','西欧':'西欧','日韩':'日韩','选型':'选型','乱码':'乱码'};
+
+function hl(s, kw){
+  const esc = String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  if(!kw) return esc;
+  const i = esc.toLowerCase().indexOf(kw.toLowerCase());
+  if(i < 0) return esc;
+  return esc.slice(0,i) + '<mark>' + esc.slice(i,i+kw.length) + '</mark>' + esc.slice(i+kw.length);
+}
+
+function render(){
+  const kw = q.value.trim();
+  const low = kw.toLowerCase();
+  const groups = DATA.map(g => ({
+    cat: g.cat, color: g.color,
+    items: g.items.filter(it => {
+      if(active !== '全部' && !g.cat.startsWith(MAP[active])) return false;
+      if(!kw) return true;
+      return (it[0] + ' ' + it[1] + ' ' + it[2] + ' ' + it[3] + ' ' + it[4]).toLowerCase().includes(low);
+    })
+  })).filter(g => g.items.length);
+
+  if(!groups.length){
+    body.innerHTML = '<div class="empty">没有匹配的编码，换个关键词试试</div>';
+    return;
+  }
+  body.innerHTML = groups.map(g => `
+    <section>
+      <h2>${g.cat}<span class="c">${g.items.length} 项</span></h2>
+      ${g.items.map(it => `
+        <div class="row">
+          <div class="code" data-copy="${it[1]}" title="点击复制编码名"><span class="dot" style="background:${g.color}"></span>${it[0]}</div>
+          <div>
+            <div class="name">${hl(it[2], kw)}<span class="en">${hl(it[1], kw)}</span>
+              ${HOT_TAG.includes(it[4]) ? `<span class="tag hot">${it[4]}</span>` : `<span class="tag${it[4]==='坑点'?' dav':''}">${it[4]}</span>`}
+            </div>
+            <div class="desc">${hl(it[3], kw)}</div>
+          </div>
+        </div>`).join('')}
+    </section>`).join('');
+}
+
+let tid;
+function tip(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(tid); tid = setTimeout(() => t.classList.remove('on'), 1400);
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]');
+  if(!c || c.closest('.f')) return;
+  const text = c.dataset.copy;
+  const done = () => tip('已复制 ' + text);
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => fb(text, done));
+  else fb(text, done);
+});
+function fb(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ tip('复制失败'); }
+  document.body.removeChild(ta);
+}
+q.addEventListener('input', render);
+document.addEventListener('keydown', e => {
+  if(e.key === '/' && document.activeElement !== q){ e.preventDefault(); q.focus(); }
+  if(e.key === 'Escape'){ q.value=''; render(); q.blur(); }
+});
+render();
+</script>
+</body>
+</html>

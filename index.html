@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开发速查工具集 · 七个单页</title>
+<style>
+  :root{--bg:#f6f8fa;--panel:#fff;--border:#e4e8ee;--text:#1f2937;--muted:#6b7280;--brand:#2f7d5f;--brand-soft:#eaf5f0;--mono:'Cascadia Mono',Consolas,'Courier New',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif;padding:56px 24px}
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:24px;font-weight:700;letter-spacing:.3px}
+  .sub{color:var(--muted);font-size:13.5px;margin:6px 0 30px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+  a.card{display:block;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px 20px;text-decoration:none;color:inherit;transition:.16s}
+  a.card:hover{border-color:var(--brand);box-shadow:0 6px 20px rgba(47,125,95,.09);transform:translateY(-2px)}
+  .icon{width:34px;height:34px;border-radius:9px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font:600 13px var(--mono);margin-bottom:12px}
+  .name{font-size:15px;font-weight:600;margin-bottom:4px}
+  .desc{font-size:12.5px;color:var(--muted);line-height:1.55}
+  .foot{margin-top:26px;font-size:12.5px;color:#8a94a3}
+  .foot code{font:12px var(--mono);background:#fff;border:1px solid var(--border);border-radius:5px;padding:1px 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>开发速查工具集</h1>
+  <div class="sub">七个独立单页 · 纯静态、无依赖、可离线使用</div>
+  <div class="grid">
+    <a class="card" href="git-memo.html">
+      <div class="icon">Git</div>
+      <div class="name">Git 备忘录</div>
+      <div class="desc">配置、分支、暂存、撤销、变基、子模块、换行符等 88 条常用命令，一键复制</div>
+    </a>
+    <a class="card" href="regex-memo.html">
+      <div class="icon">.*</div>
+      <div class="name">正则备忘录</div>
+      <div class="desc">字符集、量词、边界、断言、分组捕获语法表，附手机号/邮箱/URL 等常用实例</div>
+    </a>
+    <a class="card" href="chmod-calculator.html">
+      <div class="icon">755</div>
+      <div class="name">Chmod 计算器</div>
+      <div class="desc">勾选权限位生成八进制与符号表示，支持 setuid/setgid/sticky 与反向解析</div>
+    </a>
+    <a class="card" href="http-status-codes.html">
+      <div class="icon">404</div>
+      <div class="name">HTTP 状态码</div>
+      <div class="desc">IANA 标准 1xx–5xx 共 64 个 + 14 个 Nginx/Cloudflare 等扩展码，含中文含义与使用场景</div>
+    </a>
+    <a class="card" href="mime-types.html">
+      <div class="icon">MIME</div>
+      <div class="name">MIME 类型</div>
+      <div class="desc">扩展名与 MIME 双向查询，覆盖文档、图片、音视频、字体、压缩包等 98 项常见类型</div>
+    </a>
+    <a class="card" href="charset.html">
+      <div class="icon">UTF</div>
+      <div class="name">字符集编码</div>
+      <div class="desc">ASCII/GBK/GB18030/Big5/UTF-8/UTF-16 等编码对照、按场景选型建议与乱码特征排查</div>
+    </a>
+    <a class="card" href="ports.html">
+      <div class="icon">:80</div>
+      <div class="name">常用服务端口</div>
+      <div class="desc">14 类共 162 个端口：Web/文件/邮件/远程/数据库/消息/搜索/Hadoop 与数仓/计算引擎/Java 中间件/容器/监控/网络/开发，标注默认值与端口冲突</div>
+    </a>
+  </div>
+  <div class="foot">每个页面均为单个 HTML 文件，双击即可用浏览器打开；按 <code>/</code> 快速聚焦搜索，<code>Esc</code> 清空。</div>
+</div>
+</body>
+</html>

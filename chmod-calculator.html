@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chmod 计算器 · 单页版</title>
+<style>
+  :root{--bg:#f6f8fa;--panel:#fff;--border:#e4e8ee;--text:#1f2937;--muted:#6b7280;--brand:#2f7d5f;--brand-soft:#eaf5f0;--code:#f2f4f7;--mono:'Cascadia Mono',Consolas,'Courier New',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif;padding:26px 20px 70px}
+  .wrap{max-width:960px;margin:0 auto}
+  .head{margin-bottom:18px}
+  h1{font-size:19px;font-weight:700}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .card h2{font-size:13px;font-weight:600;color:#43506b;margin-bottom:12px;letter-spacing:.3px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .grp{border:1px solid var(--border);border-radius:10px;padding:12px;background:#fcfdfe}
+  .grp .name{font-size:12.5px;color:#43506b;font-weight:600;margin-bottom:2px;display:flex;justify-content:space-between}
+  .grp .name span{font:11.5px var(--mono);color:#9aa4b2;font-weight:400}
+  .grp .who{font-size:11.5px;color:#9aa4b2;margin-bottom:9px}
+  .bit{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;user-select:none}
+  .bit:hover{background:#f1f5f9}
+  .bit input{appearance:none;width:17px;height:17px;border:1.5px solid #c3ccd6;border-radius:5px;background:#fff;cursor:pointer;position:relative;flex:none}
+  .bit input:checked{background:var(--brand);border-color:var(--brand)}
+  .bit input:checked::after{content:'';position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(42deg)}
+  .bit label{font-size:13px;cursor:pointer;flex:1}
+  .bit .v{font:11.5px var(--mono);color:#9aa4b2}
+  .special{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)}
+  .special .bit{padding:4px 6px}
+  .special .bit label{font-size:12.5px;color:#4b5563}
+  .out{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .box{background:#fbfdfc;border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative}
+  .box .lab{font-size:11.5px;color:#8a94a3;letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px}
+  .box .val{font:600 26px/1.2 var(--mono);color:#1f2d3d;letter-spacing:3px}
+  .box .val.sm{font-size:19px;letter-spacing:1px}
+  .copy{position:absolute;right:10px;top:10px;border:1px solid var(--border);background:#fff;color:#5b6675;border-radius:6px;font-size:11.5px;padding:3px 9px;cursor:pointer}
+  .copy:hover{border-color:var(--brand);color:var(--brand)}
+  .cmd{margin-top:12px;background:var(--code);border:1px solid #e8ebf0;border-radius:9px;padding:12px 74px 12px 14px;font:13px var(--mono);position:relative;overflow:auto}
+  .cmd .file{color:#8a94a3}
+  .hook{font-size:12px;color:var(--muted);margin-top:10px}
+  .reverse{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .reverse input{height:38px;flex:1;min-width:200px;border:1px solid var(--border);border-radius:9px;padding:0 12px;font:13px var(--mono);outline:none}
+  .reverse input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .btn{height:38px;padding:0 16px;border:1px solid var(--border);background:#fff;color:#43506b;border-radius:9px;font-size:13px;cursor:pointer}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chip{border:1px solid var(--border);background:#fff;border-radius:999px;padding:5px 13px;font:12.5px var(--mono);color:#43506b;cursor:pointer}
+  .chip:hover{border-color:var(--brand);color:var(--brand);background:#f7fbf9}
+  .tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .tbl th,.tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid #f0f2f5}
+  .tbl th{font-size:12px;color:#8a94a3;font-weight:500}
+  .tbl td{font:12.5px var(--mono);color:#374151}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);background:#1f2937;color:#fff;font-size:12.5px;padding:8px 16px;border-radius:999px;opacity:0;transition:.18s;pointer-events:none;z-index:99}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  @media (max-width:760px){.grid{grid-template-columns:1fr}.out{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Chmod 计算器</h1>
+    <div class="sub">勾选权限位自动生成八进制 / 符号表示，也可反向解析已有权限</div>
+  </div>
+
+  <div class="card">
+    <h2>权限位</h2>
+    <div class="grid" id="grid"></div>
+    <div class="special">
+      <div class="bit"><input type="checkbox" id="suid"><label for="suid">setuid（属主 s，千位 4）</label></div>
+      <div class="bit"><input type="checkbox" id="sgid"><label for="sgid">setgid（属组 s，千位 2）</label></div>
+      <div class="bit"><input type="checkbox" id="sticky"><label for="sticky">sticky（其他 t，千位 1）</label></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>结果</h2>
+    <div class="out">
+      <div class="box">
+        <div class="lab">八进制</div>
+        <div class="val" id="octal">644</div>
+        <button class="copy" data-copy="644" id="c1">复制</button>
+      </div>
+      <div class="box">
+        <div class="lab">符号表示</div>
+        <div class="val sm" id="symbolic">rw-r--r--</div>
+        <button class="copy" data-copy="rw-r--r--" id="c2">复制</button>
+      </div>
+    </div>
+    <div class="cmd" id="cmd">chmod <b id="cmdMode">644</b> <span class="file">file.txt</span><button class="copy" data-copy="chmod 644 file.txt" id="c3">复制命令</button></div>
+    <div class="hook" id="hook">当前：属主可读写、属组只读、其他只读</div>
+  </div>
+
+  <div class="card">
+    <h2>反向解析</h2>
+    <div class="reverse">
+      <input id="rev" placeholder="输入八进制 755 / 0755 / 4755，或符号 rwxr-xr-x / -rw-r--r--" autocomplete="off">
+      <button class="btn primary" id="apply">解析</button>
+      <button class="btn" id="clear">清空</button>
+    </div>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <div class="card">
+    <h2>取值对照</h2>
+    <table class="tbl">
+      <thead><tr><th>数值</th><th>权限</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>4</td><td>r--</td><td>只读</td></tr>
+        <tr><td>2</td><td>-w-</td><td>只写</td></tr>
+        <tr><td>1</td><td>--x</td><td>只执行</td></tr>
+        <tr><td>6</td><td>rw-</td><td>读写</td></tr>
+        <tr><td>5</td><td>r-x</td><td>读 + 执行</td></tr>
+        <tr><td>7</td><td>rwx</td><td>读写 + 执行</td></tr>
+        <tr><td>0</td><td>---</td><td>无权限</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const WHO = [
+  {key:'owner', name:'属主', en:'Owner / User', bits:[['r','读',4],['w','写',2],['x','执行',1]]},
+  {key:'group', name:'属组', en:'Group',      bits:[['r','读',4],['w','写',2],['x','执行',1]]},
+  {key:'other', name:'其他', en:'Public / Other', bits:[['r','读',4],['w','写',2],['x','执行',1]]}
+];
+const PRESETS = ['644','755','600','700','777','664','775','4755','2775','1777'];
+
+const grid = document.getElementById('grid');
+grid.innerHTML = WHO.map((w, wi) => `
+  <div class="grp">
+    <div class="name">${w.name}<span id="v${wi}">6</span></div>
+    <div class="who">${w.en}</div>
+    ${w.bits.map((b, bi) => `
+      <div class="bit">
+        <input type="checkbox" id="p${wi}${bi}" data-wi="${wi}" data-val="${b[2]}">
+        <label for="p${wi}${bi}">${b[1]}</label>
+        <span class="v">${b[2]}</span>
+      </div>`).join('')}
+  </div>`).join('');
+
+const suid = document.getElementById('suid');
+const sgid = document.getElementById('sgid');
+const sticky = document.getElementById('sticky');
+
+function digits(){
+  return WHO.map((w, wi) => w.bits.reduce((sum, b, bi) => {
+    return sum + (document.getElementById('p'+wi+bi).checked ? b[2] : 0);
+  }, 0));
+}
+
+function symbolicFor(d, special){
+  return d.map((n, i) => {
+    const r = n & 4 ? 'r' : '-';
+    const w = n & 2 ? 'w' : '-';
+    let x;
+    if(i === 0 && special.suid) x = (n & 1) ? 's' : 'S';
+    else if(i === 1 && special.sgid) x = (n & 1) ? 's' : 'S';
+    else if(i === 2 && special.sticky) x = (n & 1) ? 't' : 'T';
+    else x = (n & 1) ? 'x' : '-';
+    return r + w + x;
+  }).join('');
+}
+
+function describe(d){
+  const label = ['属主','属组','其他'];
+  const parts = d.map((n, i) => {
+    if(n === 0) return label[i] + '无权限';
+    const acts = [];
+    if(n & 4) acts.push('读');
+    if(n & 2) acts.push('写');
+    if(n & 1) acts.push('执行');
+    return label[i] + '可' + acts.join('');
+  });
+  return '当前：' + parts.join('、');
+}
+
+function update(from){
+  const d = digits();
+  const special = {suid: suid.checked, sgid: sgid.checked, sticky: sticky.checked};
+  const specialDigit = (special.suid?4:0) + (special.sgid?2:0) + (special.sticky?1:0);
+  const octal = (specialDigit ? String(specialDigit) : '') + d.join('');
+  const sym = symbolicFor(d, special);
+
+  d.forEach((n, i) => document.getElementById('v'+i).textContent = n);
+  document.getElementById('octal').textContent = octal;
+  document.getElementById('symbolic').textContent = sym;
+  document.getElementById('cmdMode').textContent = octal;
+  document.getElementById('hook').textContent = describe(d) +
+    (specialDigit ? '；特殊位：' + [special.suid?'setuid':'', special.sgid?'setgid':'', special.sticky?'sticky':''].filter(Boolean).join(' + ') : '');
+  document.getElementById('c1').dataset.copy = octal;
+  document.getElementById('c2').dataset.copy = sym;
+  document.getElementById('c3').dataset.copy = 'chmod ' + octal + ' file.txt';
+}
+
+function applyOctal(str){
+  let s = str.replace(/\s/g,'').replace(/^0+(?=\d)/,'');
+  if(!/^[0-7]{3,4}$/.test(s)) return false;
+  if(s.length === 3) s = '0' + s;
+  const sp = +s[0], d = s.slice(1).split('').map(Number);
+  suid.checked = !!(sp & 4); sgid.checked = !!(sp & 2); sticky.checked = !!(sp & 1);
+  d.forEach((n, i) => [4,2,1].forEach((v, bi) => {
+    document.getElementById('p'+i+bi).checked = !!(n & v);
+  }));
+  return true;
+}
+
+function applySymbolic(str){
+  let s = str.trim().replace(/^[-dlbcps]/, '');
+  if(!/^[rwxsStT-]{9}$/.test(s)) return false;
+  const triples = [s.slice(0,3), s.slice(3,6), s.slice(6,9)];
+  let su = false, sg = false, st = false;
+  triples.forEach((t, i) => {
+    [0,1,2].forEach(bi => {
+      const ch = t[bi];
+      const v = [4,2,1][bi];
+      let on = false;
+      if(bi < 2) on = ch === 'rw'[bi];
+      else {
+        if(ch === 'x' || ch === 's' || ch === 't') on = true;
+        if(ch === 's'){ if(i === 0) su = true; if(i === 1) sg = true; }
+        if(ch === 't') st = true;
+        if(ch === 'S'){ if(i === 0) su = true; if(i === 1) sg = true; }
+        if(ch === 'T') st = true;
+      }
+      document.getElementById('p'+i+bi).checked = on;
+    });
+  });
+  suid.checked = su; sgid.checked = sg; sticky.checked = st;
+  return true;
+}
+
+let tid;
+function tip(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(tid); tid = setTimeout(() => t.classList.remove('on'), 1400);
+}
+
+document.getElementById('apply').onclick = () => {
+  const v = document.getElementById('rev').value.trim();
+  if(!v) return tip('先输入权限值');
+  const ok = /^[-dlbcpsrwxStT0-7]+$/.test(v) && /[rwxSt-]{9}/.test(v)
+    ? applySymbolic(v) || applyOctal(v)
+    : applyOctal(v);
+  if(ok){ update(); tip('已解析'); }
+  else tip('格式无法识别，试试 755 / 0755 / rwxr-xr-x');
+};
+
+document.getElementById('rev').addEventListener('keydown', e => {
+  if(e.key === 'Enter') document.getElementById('apply').click();
+});
+document.getElementById('clear').onclick = () => {
+  document.querySelectorAll('#grid input, .special input').forEach(c => c.checked = false);
+  document.getElementById('rev').value = '';
+  update();
+};
+
+document.getElementById('presets').innerHTML = PRESETS.map(p =>
+  `<span class="chip" data-preset="${p}">${p}</span>`).join('');
+document.getElementById('presets').addEventListener('click', e => {
+  const c = e.target.closest('[data-preset]');
+  if(!c) return;
+  applyOctal(c.dataset.preset);
+  document.getElementById('rev').value = c.dataset.preset;
+  update();
+  tip('已应用 ' + c.dataset.preset);
+});
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-copy]');
+  if(!b) return;
+  const text = b.dataset.copy;
+  const done = () => tip('已复制 ' + text);
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => fb(text, done));
+  else fb(text, done);
+});
+function fb(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ tip('复制失败'); }
+  document.body.removeChild(ta);
+}
+
+document.querySelectorAll('#grid input, .special input').forEach(c => c.addEventListener('change', () => update()));
+applyOctal('644');
+update();
+</script>
+</body>
+</html>

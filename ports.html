@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>常用服务端口 · 单页版</title>
+<style>
+  :root{--bg:#f6f8fa;--panel:#fff;--border:#e4e8ee;--text:#1f2937;--muted:#6b7280;--brand:#2f7d5f;--brand-soft:#eaf5f0;--code:#f2f4f7;--mono:'Cascadia Mono',Consolas,'Courier New',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif;padding-bottom:60px}
+  header{position:sticky;top:0;z-index:10;background:rgba(246,248,250,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:16px 28px}
+  .htop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  h1{font-size:19px;font-weight:700}
+  .sub{color:var(--muted);font-size:12.5px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .search{position:relative;flex:1;max-width:440px;min-width:200px}
+  .search input{width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 38px 0 12px;background:#fff;font-size:13.5px;outline:none}
+  .search input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .search .k{position:absolute;right:10px;top:9px;font:11px var(--mono);color:var(--muted);border:1px solid var(--border);border-radius:5px;padding:1px 5px;background:#fff}
+  .filters{display:flex;gap:7px;flex-wrap:wrap}
+  .f{border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 14px;font-size:12.5px;color:#43506b;cursor:pointer;user-select:none}
+  .f.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .f:hover{border-color:var(--brand)}
+  .wrap{max-width:1040px;margin:22px auto 0;padding:0 28px}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+  h2{font-size:13.5px;font-weight:600;padding:12px 16px;background:#fbfcfd;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  h2 .c{font:11.5px var(--mono);color:#9aa4b2;font-weight:400}
+  .row{display:grid;grid-template-columns:88px 1fr;gap:14px;padding:11px 16px;border-bottom:1px solid #f0f2f5}
+  .row:last-child{border-bottom:0}
+  .row:hover{background:#fafcfb}
+  .code{font:600 13.5px var(--mono);color:#1f2d3d;display:flex;align-items:center;gap:6px;word-break:break-all}
+  .code .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .name{font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .name .en{font:12px var(--mono);color:#8a94a3;font-weight:400}
+  .tag{font-size:11px;padding:1px 7px;border-radius:5px;background:#eef2f6;color:#5b6675}
+  .tag.dav{background:#fdf1e6;color:#a56a26}
+  .tag.hot{background:var(--brand-soft);color:var(--brand)}
+  .desc{color:#4b5563;font-size:12.5px;margin-top:2px}
+  .empty{color:var(--muted);text-align:center;padding:36px;background:var(--panel);border:1px dashed var(--border);border-radius:12px}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);background:#1f2937;color:#fff;font-size:12.5px;padding:8px 16px;border-radius:999px;opacity:0;transition:.18s;pointer-events:none;z-index:99}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  mark{background:#fde68a;border-radius:3px;padding:0 1px}
+  @media (max-width:760px){.wrap{padding:0 14px}.row{grid-template-columns:74px 1fr;gap:10px}header{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <h1>常用服务端口</h1>
+    <span class="sub">14 类 · 163 条 · 点击端口号复制 · 标注 TCP/UDP、默认值与常见冲突</span>
+  </div>
+  <div class="bar">
+    <div class="search">
+      <input id="q" placeholder="搜索：3306 / kafka / hbase / 集群 / 冲突" autocomplete="off">
+      <span class="k">/</span>
+    </div>
+    <div class="filters" id="filters"></div>
+  </div>
+</header>
+
+<div class="wrap"><div id="body"></div></div>
+<div id="toast"></div>
+
+<script>
+const DATA = [
+  {cat:'Web 与代理', color:'#4c8bf5', items:[
+    [80,'HTTP','明文 Web 服务','浏览器默认端口，Nginx/Apache 监听','常用'],
+    [443,'HTTPS','TLS 加密 Web 服务','证书配置在 443，SNI 支持多域名','常用'],
+    [8080,'HTTP Alt / Tomcat','备用 HTTP、反向代理','Tomcat 默认、Nexus、管理后台；Prometheus 备用端口也用它','常用'],
+    [8081,'HTTP Alt 2','第二 HTTP 服务','Nexus、Flink Web UI 默认、Spring Boot 多实例','冲突'],
+    [8443,'HTTPS Alt','备用 HTTPS','Tomcat/WebLogic 加密端口常用'],
+    [8000,'Dev Server','开发内置服务器','Django runserver、PHP -S、python -m http.server'],
+    [8888,'Jupyter / 代理','笔记本与抓包','Jupyter Notebook 默认、Charles/Fiddler 代理'],
+    [3000,'Node / Grafana','前端开发服务','React/Next dev、Grafana 默认，两者同机必冲突','常用'],
+    [5173,'Vite','Vite 开发服务器','Vue3/Vite 项目默认端口'],
+    [4200,'Angular','Angular CLI 开发服务','ng serve 默认'],
+    [5000,'Flask / Sybase','Python Web、Sybase ASE、镜像仓库','Flask 与 UPnP 常用；Sybase ASE 默认 5000；Docker Registry 也用它','冲突'],
+    [3128,'Squid','HTTP 正向代理','Squid 默认端口，企业出口代理常见','代理']
+  ]},
+  {cat:'文件传输与共享', color:'#3f9b6f', items:[
+    [20,'FTP-Data','FTP 数据通道','仅主动模式使用，被动模式由 21 协商随机端口'],
+    [21,'FTP','FTP 控制通道','明文传输账号密码，建议换 SFTP'],
+    [69,'TFTP','简单文件传输','UDP，无认证，用于网络设备刷机/PXE','UDP'],
+    [111,'rpcbind','RPC 端口映射','NFS 依赖，先查 111 再定位实际数据端口'],
+    [873,'rsync','增量同步服务','rsync daemon 模式，常配 873/TCP'],
+    [2049,'NFS','网络文件系统','NFSv4 直接固定 2049，v3 还需 rpcbind'],
+    [445,'SMB','Windows 文件共享','CIFS/SMB 直连，勒索病毒主要攻击面，勿暴露公网','常用'],
+    [139,'NetBIOS-SSN','NetBIOS 会话服务','老式 SMB 走 139，现代多为 445'],
+    [137,'NetBIOS-NS','NetBIOS 名称服务','UDP，局域网名称解析','UDP'],
+    [138,'NetBIOS-DGM','NetBIOS 数据报','UDP，浏览服务','UDP'],
+    [3690,'SVN','Subversion 服务','svnserve 协议端口，替代 svn:// 访问方式']
+  ]},
+  {cat:'邮件服务', color:'#c0392b', items:[
+    [25,'SMTP','邮件发送（MTA 之间）','云主机通常封禁 25，改用 465/587','常用'],
+    [465,'SMTPS','SMTP over TLS','隐式 TLS，客户端提交常用'],
+    [587,'SMTP Submission','邮件提交端口','STARTTLS 升级，推荐客户端使用'],
+    [110,'POP3','收邮件（明文）','下载后默认删除，适合单设备'],
+    [995,'POP3S','POP3 over TLS','加密版 110'],
+    [143,'IMAP','收邮件（明文）','服务端保留邮件，多设备同步'],
+    [993,'IMAPS','IMAP over TLS','加密版 143，现代客户端首选','常用']
+  ]},
+  {cat:'远程管理与桌面', color:'#8a7cc4', items:[
+    [22,'SSH / SFTP / SCP','远程登录与文件传输','改端口 + 禁 root + 密钥登录是基本加固；SFTP/SCP 复用同一端口','常用'],
+    [23,'Telnet','明文远程登录','历史协议，已不应用于生产'],
+    [2222,'DirectAdmin / SSH Alt','虚拟主机管理面板登录','DA 面板默认；也常被改为 SSH 备用端口','面板'],
+    [3389,'RDP','Windows 远程桌面','暴露公网极易被爆破，务必走 VPN/网关','常用'],
+    [4899,'Radmin','远程控制软件','Radmin Server 默认，明文旧版本风险高'],
+    [5631,'pcAnywhere Data','Symantec 远程控制数据','老式远程控制，已停止维护'],
+    [5632,'pcAnywhere Status','Symantec 远程控制状态','与 5631 配套使用'],
+    [5900,'VNC','图形桌面远程','常配 SSH 隧道，明文密码需加固'],
+    [5901,'VNC :1','第二个 VNC 会话','5900 + display 号'],
+    [5985,'WinRM HTTP','Windows 远程管理','PowerShell Remoting 默认明文'],
+    [5986,'WinRM HTTPS','Windows 远程管理加密','Ansible 连接 Windows 常用']
+  ]},
+  {cat:'数据库', color:'#2f7d5f', items:[
+    [3306,'MySQL / MariaDB','关系型数据库','生产禁止对公网开放；注意 bind-address','常用'],
+    [33060,'MySQL X Protocol','MySQL 8 X 协议','文档存储/异步接口，默认仅本机'],
+    [5432,'PostgreSQL','关系型数据库','默认监听 localhost，改 pg_hba.conf 控制访问','常用'],
+    [1433,'SQL Server','微软数据库','默认实例 TCP 1433'],
+    [1434,'SQL Browser','SQL Server 实例浏览','UDP，命名实例端口查询','UDP'],
+    [1521,'Oracle TNS','Oracle 监听器','多实例共用监听，靠 SID/服务名区分'],
+    [27017,'MongoDB','文档数据库','未鉴权暴露是常见入侵入口','常用'],
+    [27018,'MongoDB Mongos','分片路由服务','分片集群入口'],
+    [6379,'Redis','内存键值库','务必设 requirepass + bind 内网，未授权访问高发','常用'],
+    [11211,'Memcached','内存缓存','UDP/TCP，无认证，仅内网'],
+    [9042,'Cassandra','CQL 原生端口','分布式宽表数据库，JMX 7199'],
+    [8086,'InfluxDB HTTP','时序数据库 API','1.x/2.x HTTP 接口'],
+    [8083,'InfluxDB Admin','时序库 Web 管理台','1.x 的 web admin，新版已移除'],
+    [8123,'ClickHouse HTTP','列式库 HTTP 接口','查询走 HTTP，注意用户权限'],
+    [9000,'ClickHouse Native','列式库原生协议','同端口也被 HDFS RPC、PHP-FPM、MinIO 使用','冲突'],
+    [5984,'CouchDB','文档数据库 HTTP','Fauxton 管理界面同端口'],
+    [50000,'DB2','企业数据库','DB2 默认实例端口，SAP 也有占用']
+  ]},
+  {cat:'缓存与消息队列', color:'#d97706', items:[
+    [5672,'RabbitMQ AMQP','消息队列 AMQP 协议','客户端连接端口'],
+    [15672,'RabbitMQ Mgmt','RabbitMQ 管理台','Web UI，默认 guest 仅本机可登录'],
+    [4369,'Erlang EPMD','Erlang 端口映射','RabbitMQ 集群发现依赖'],
+    [25672,'RabbitMQ Cluster','集群节点通信','Erlang 分布式端口'],
+    [61616,'ActiveMQ','JMS OpenWire 协议','客户端连接端口'],
+    [8161,'ActiveMQ Console','ActiveMQ 管理台','Web 控制台，默认 admin/admin 需改'],
+    [9092,'Kafka','消息队列 Broker','客户端与 Broker 通信','常用'],
+    [9093,'Kafka Controller','KRaft 控制器选举','仅 KRaft 模式；与 Alertmanager 端口冲突','冲突'],
+    [2181,'ZooKeeper','分布式协调','Kafka 旧版与 Dubbo 注册中心常用','常用'],
+    [2888,'ZK Cluster','ZK 集群同步','Leader 与 Follower 数据同步'],
+    [3888,'ZK Election','ZK 选举','Leader 选举通信'],
+    [1883,'MQTT','物联网消息协议','明文，适合内网设备'],
+    [8883,'MQTT over TLS','加密 MQTT','公网 IoT 接入应使用'],
+    [11111,'Canal','MySQL binlog 增量订阅','阿里 Canal server 默认端口']
+  ]},
+  {cat:'搜索与可视化', color:'#0e7490', items:[
+    [9200,'Elasticsearch','REST API','9200 对外查询/写入，切勿裸暴露','常用'],
+    [9300,'Elasticsearch Transport','节点间通信','7.x 后改用 HTTP 内部通信，仍需内网'],
+    [5601,'Kibana','可视化控制台','连 ES 的 Web UI'],
+    [9100,'Elasticsearch-Head','ES 集群浏览器','head 插件常跑在 9100；与 Node Exporter、打印 RAW 冲突','冲突']
+  ]},
+  {cat:'Hadoop 与数据仓库', color:'#2563eb', items:[
+    [8020,'HDFS NameNode RPC','HDFS 元数据 RPC','fs.defaultFS 常见 hdfs://host:8020，客户端直连'],
+    [8019,'Hadoop 辅助端口','部分发行版的 Hadoop 服务','清单标注项，非所有版本固定占用','清单'],
+    [9000,'HDFS RPC','Hadoop 1.x/旧配置 HDFS 端口','旧版 fs.defaultFS 默认 9000，与 ClickHouse 冲突','冲突'],
+    [9870,'HDFS NameNode Web','HDFS Web UI','Hadoop 3.x 默认'],
+    [50070,'HDFS NameNode Web (2.x)','旧版 HDFS Web UI','Hadoop 2.x 默认'],
+    [50090,'SecondaryNameNode Web','SNN 管理页面','Hadoop 2.x 检查点服务'],
+    [8088,'YARN ResourceManager Web','资源调度页面','Hadoop 2/3 默认'],
+    [8042,'YARN NodeManager Web','节点管理页面','查看容器与日志'],
+    [50030,'JobTracker Web','Hadoop 1.x 作业页面','MapReduce v1 时代端口'],
+    [19888,'MapReduce JobHistory','历史作业查询','已完成的 MR 作业'],
+    [9083,'Hive Metastore','Hive 元数据服务','Spark/Flink 连 Hive 也走这里'],
+    [10000,'HiveServer2','Hive 客户端接入','JDBC/ODBC/beeline 默认端口'],
+    [11000,'Oozie','工作流调度服务','Oozie Web Console'],
+    [16000,'HBase Master RPC','HBase 2.x 主节点','1.x 为 60000'],
+    [16010,'HBase Master Web','HBase 2.x 管理页面','1.x 为 60010'],
+    [16020,'HBase RegionServer RPC','HBase 2.x 数据节点','1.x 为 60020'],
+    [16030,'HBase RegionServer Web','HBase 2.x 节点页面','1.x 为 60030'],
+    [60000,'HBase Master RPC (1.x)','旧版 HBase 主节点','2.x 已改为 16000','旧版'],
+    [60010,'HBase Master Web (1.x)','旧版管理页面','2.x 改为 16010','旧版'],
+    [60030,'HBase RS Web (1.x)','旧版节点页面','2.x 改为 16030','旧版'],
+    [7180,'Cloudera Manager Web','CDH 集群管理台','7183 为 Navigator 审计'],
+    [7182,'CDH 组件服务','Reports Manager 等','CM 附属组件端口'],
+    [25000,'Impala Web UI','Impala 守护进程页面','impalad debug web'],
+    [25010,'Impala StateStore','状态同步服务','impalad 订阅元数据'],
+    [21050,'Impala JDBC','Impala 客户端接入','JDBC/ODBC 默认'],
+    [7051,'Kudu Master RPC','Kudu 主节点','Tablet Server 为 7050'],
+    [8051,'Kudu Master Web','Kudu 主节点页面','Tablet Server Web 为 8050']
+  ]},
+  {cat:'计算引擎与流处理', color:'#7c3aed', items:[
+    [7077,'Spark Master','Spark 集群通信','Standalone 模式，Worker 也连此端口'],
+    [4040,'Spark Application UI','运行中应用页面','Driver 所在机器，多应用依次 4040/4041'],
+    [18080,'Spark History Server','Spark 历史任务页面','spark.history.ui.port 默认值'],
+    [4000,'Spark History (部分发行版)','历史服务备用端口','清单标注项，非官方默认（官方为 18080）','清单'],
+    [4440,'Spark（清单标注）','部分发行版使用','非 Spark 官方默认端口，部署时以实际配置为准','清单'],
+    [6123,'Flink JobManager RPC','Flink 集群通信','JobManager 与 TaskManager 交互']
+  ]},
+  {cat:'Java 中间件与应用服务器', color:'#b45309', items:[
+    [1099,'Java RMI Registry','远程方法调用注册表','JMX/RMI 常用，暴露可被反序列化攻击'],
+    [4848,'GlassFish Admin','GlassFish 控制台','管理端口，默认 admin/admin'],
+    [7001,'WebLogic AdminServer','WebLogic 管理服务','管理控制台，SSL 版为 7002'],
+    [9043,'WebSphere Admin SSL','WebSphere 管理控制台','9060 为 HTTP 版'],
+    [9990,'JBoss / WildFly Mgmt','JBoss 管理接口','WildFly 管理端口，应用仍走 8080'],
+    [8848,'Nacos HTTP','注册与配置中心','Nacos 主端口，控制台同端口'],
+    [7848,'Nacos JRaft','Nacos 集群一致性','集群节点间选举与日志复制'],
+    [20880,'Dubbo','Dubbo 服务暴露端口','默认 dubbo 协议端口，多实例递增']
+  ]},
+  {cat:'容器与云原生', color:'#0ea5e9', items:[
+    [2375,'Docker API','Docker 守护进程（明文）','暴露即等于交出 root，严禁公网','常用'],
+    [2376,'Docker API TLS','Docker 守护进程（加密）','需配置证书'],
+    [2379,'etcd Client','K8s 元数据存储','存全集群状态，泄露即失守'],
+    [2380,'etcd Peer','etcd 节点间通信','集群同步'],
+    [6443,'Kubernetes API','API Server','kubectl 连接入口','常用'],
+    [10250,'Kubelet API','节点代理','exec/logs 通道，暴露风险高'],
+    [10257,'kube-controller-manager','控制器管理器','HTTPS 健康与指标'],
+    [10259,'kube-scheduler','调度器','HTTPS 健康与指标']
+  ]},
+  {cat:'监控与运维', color:'#6d28d9', items:[
+    [9090,'Prometheus','指标采集与查询','Web UI + API','常用'],
+    [9091,'Pushgateway','短任务指标推送','批处理任务用'],
+    [9093,'Alertmanager','告警路由','与 Kafka KRaft 端口冲突','冲突'],
+    [9100,'Node Exporter','主机指标导出','与 ES-head、打印机 RAW 端口冲突','冲突'],
+    [8048,'Kafka Eagle','Kafka 监控台','Web 管理界面，默认 admin/123456'],
+    [8069,'Zabbix 相关服务','部分部署的监控 Web','清单标注；Odoo 也常用 8069，需实测确认','清单'],
+    [8649,'Ganglia gmond','集群指标采集','gmetad 为 8651/8652'],
+    [9001,'Supervisor','进程管理 Web','supervisord 的 http 管理界面']
+  ]},
+  {cat:'目录认证与网络基础', color:'#b45309', items:[
+    [53,'DNS','域名解析','UDP 查询为主，大响应/区域传送用 TCP','UDP'],
+    [67,'DHCP Server','地址分配服务端','UDP，广播通信','UDP'],
+    [68,'DHCP Client','地址分配客户端','UDP','UDP'],
+    [123,'NTP','时间同步','UDP，等保要求统一时钟源','UDP'],
+    [161,'SNMP','设备监控查询','UDP，v3 才加密','UDP'],
+    [162,'SNMP Trap','告警上报','UDP','UDP'],
+    [389,'LDAP','目录服务','AD 与 OpenLDAP 明文查询'],
+    [636,'LDAPS','加密目录服务','SSL/TLS 版 389'],
+    [3268,'AD Global Catalog','全局编录','林内跨域查询'],
+    [3269,'AD GC SSL','全局编录加密','SSL 版 3268'],
+    [88,'Kerberos','域认证','AD 认证核心，时间偏差需 <5 分钟'],
+    [464,'kpasswd','Kerberos 改密','密码修改协议'],
+    [1812,'RADIUS Auth','网络接入认证','UDP，802.1X/VPN 认证','UDP'],
+    [1813,'RADIUS Acct','计费与审计','UDP','UDP'],
+    [49,'TACACS+','网络设备管理认证','Cisco 体系，TCP'],
+    [179,'BGP','边界网关路由','运营商与数据中心互联'],
+    [135,'MS RPC','Windows RPC 端点映射','域内横向移动常用端口'],
+    [500,'IKE','IPSec 密钥协商','UDP','UDP'],
+    [4500,'IPSec NAT-T','IPSec NAT 穿透','UDP','UDP'],
+    [1194,'OpenVPN','VPN 服务','UDP 默认，可改 TCP 443 伪装','UDP'],
+    [1701,'L2TP','二层隧道 VPN','常与 IPSec 组合'],
+    [1723,'PPTP','老式 VPN','已不安全，不推荐'],
+    [51820,'WireGuard','现代 VPN','UDP，配置简洁性能高','UDP'],
+    [4789,'VXLAN','overlay 网络封装','UDP，容器/云网络','UDP'],
+    [1080,'SOCKS5','代理协议','SSH -D 动态转发也用此端口']
+  ]},
+  {cat:'开发与调试', color:'#6b7280', items:[
+    [9418,'Git Protocol','Git 原生协议','只读匿名克隆，现多用 HTTPS/SSH'],
+    [9229,'Node Inspector','Node.js 调试器','--inspect 默认，暴露可远程执行代码'],
+    [5005,'Java JDWP','JVM 远程调试','生产开启等于开后门'],
+    [35729,'LiveReload','前端热更新','老式 livereload 默认端口']
+  ]}
+];
+
+const HOT_TAG = ['常用'];
+const q = document.getElementById('q');
+const body = document.getElementById('body');
+const filters = document.getElementById('filters');
+let active = '全部';
+
+const MAP = {'Web':'Web','文件':'文件','邮件':'邮件','远程':'远程','数据库':'数据库','消息':'缓存','搜索':'搜索','Hadoop':'Hadoop','计算':'计算','中间件':'Java','容器':'容器','监控':'监控','网络':'目录','开发':'开发'};
+
+filters.innerHTML = ['全部','Web','文件','邮件','远程','数据库','消息','搜索','Hadoop','计算','中间件','容器','监控','网络','开发']
+  .map(f => `<span class="f${f==='全部'?' on':''}" data-f="${f}">${f}</span>`).join('');
+filters.addEventListener('click', e => {
+  const t = e.target.closest('[data-f]');
+  if(!t) return;
+  active = t.dataset.f;
+  [...filters.children].forEach(c => c.classList.toggle('on', c.dataset.f === active));
+  render();
+});
+
+function hl(s, kw){
+  const esc = String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  if(!kw) return esc;
+  const i = esc.toLowerCase().indexOf(kw.toLowerCase());
+  if(i < 0) return esc;
+  return esc.slice(0,i) + '<mark>' + esc.slice(i,i+kw.length) + '</mark>' + esc.slice(i+kw.length);
+}
+
+function render(){
+  const kw = q.value.trim();
+  const low = kw.toLowerCase();
+  const groups = DATA.map(g => ({
+    cat: g.cat, color: g.color,
+    items: g.items.filter(it => {
+      if(active !== '全部' && !g.cat.startsWith(MAP[active])) return false;
+      if(!kw) return true;
+      return (it[0] + ' ' + it[1] + ' ' + it[2] + ' ' + it[3] + ' ' + it[4]).toLowerCase().includes(low);
+    })
+  })).filter(g => g.items.length);
+
+  if(!groups.length){
+    body.innerHTML = '<div class="empty">没有匹配的端口，换个关键词试试</div>';
+    return;
+  }
+  body.innerHTML = groups.map(g => `
+    <section>
+      <h2>${g.cat}<span class="c">${g.items.length} 个</span></h2>
+      ${g.items.map(it => `
+        <div class="row">
+          <div class="code" data-copy="${it[0]}" title="点击复制端口号"><span class="dot" style="background:${g.color}"></span>${it[0]}</div>
+          <div>
+            <div class="name">${hl(it[1], kw)}<span class="en">${hl(it[2], kw)}</span>
+              ${HOT_TAG.includes(it[4]) ? `<span class="tag hot">${it[4]}</span>` : (it[4] ? `<span class="tag${(it[4]==='冲突'||it[4]==='清单')?' dav':''}">${it[4]}</span>` : '')}
+            </div>
+            <div class="desc">${hl(it[3], kw)}</div>
+          </div>
+        </div>`).join('')}
+    </section>`).join('');
+}
+
+let tid;
+function tip(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(tid); tid = setTimeout(() => t.classList.remove('on'), 1400);
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]');
+  if(!c || c.closest('.f')) return;
+  const text = c.dataset.copy;
+  const done = () => tip('已复制 ' + text);
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => fb(text, done));
+  else fb(text, done);
+});
+function fb(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ tip('复制失败'); }
+  document.body.removeChild(ta);
+}
+q.addEventListener('input', render);
+document.addEventListener('keydown', e => {
+  if(e.key === '/' && document.activeElement !== q){ e.preventDefault(); q.focus(); }
+  if(e.key === 'Escape'){ q.value=''; render(); q.blur(); }
+});
+render();
+</script>
+</body>
+</html>

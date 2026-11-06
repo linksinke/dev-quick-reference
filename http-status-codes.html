@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTTP 状态码 · 单页版</title>
+<style>
+  :root{--bg:#f6f8fa;--panel:#fff;--border:#e4e8ee;--text:#1f2937;--muted:#6b7280;--brand:#2f7d5f;--brand-soft:#eaf5f0;--code:#f2f4f7;--mono:'Cascadia Mono',Consolas,'Courier New',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif;padding-bottom:60px}
+  header{position:sticky;top:0;z-index:10;background:rgba(246,248,250,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:16px 28px}
+  .htop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  h1{font-size:19px;font-weight:700}
+  .sub{color:var(--muted);font-size:12.5px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .search{position:relative;flex:1;max-width:420px;min-width:200px}
+  .search input{width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 38px 0 12px;background:#fff;font-size:13.5px;outline:none}
+  .search input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .search .k{position:absolute;right:10px;top:9px;font:11px var(--mono);color:var(--muted);border:1px solid var(--border);border-radius:5px;padding:1px 5px;background:#fff}
+  .filters{display:flex;gap:7px;flex-wrap:wrap}
+  .f{border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 14px;font-size:12.5px;color:#43506b;cursor:pointer;user-select:none}
+  .f.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .f:hover{border-color:var(--brand)}
+  .wrap{max-width:1040px;margin:22px auto 0;padding:0 28px}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+  h2{font-size:13.5px;font-weight:600;padding:12px 16px;background:#fbfcfd;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  h2 .c{font:11.5px var(--mono);color:#9aa4b2;font-weight:400}
+  .row{display:grid;grid-template-columns:78px 1fr;gap:14px;padding:11px 16px;border-bottom:1px solid #f0f2f5}
+  .row:last-child{border-bottom:0}
+  .row:hover{background:#fafcfb}
+  .code{font:600 14px var(--mono);color:#1f2d3d;display:flex;align-items:center;gap:6px}
+  .code .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .name{font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .name .en{font:12px var(--mono);color:#8a94a3;font-weight:400}
+  .tag{font-size:11px;padding:1px 7px;border-radius:5px;background:#eef2f6;color:#5b6675}
+  .tag.dav{background:#fdf1e6;color:#a56a26}
+  .tag.hot{background:var(--brand-soft);color:var(--brand)}
+  .desc{color:#4b5563;font-size:12.5px;margin-top:2px}
+  .empty{color:var(--muted);text-align:center;padding:36px;background:var(--panel);border:1px dashed var(--border);border-radius:12px}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);background:#1f2937;color:#fff;font-size:12.5px;padding:8px 16px;border-radius:999px;opacity:0;transition:.18s;pointer-events:none;z-index:99}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  mark{background:#fde68a;border-radius:3px;padding:0 1px}
+  @media (max-width:760px){.wrap{padding:0 14px}.row{grid-template-columns:66px 1fr;gap:10px}header{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <h1>HTTP 状态码</h1>
+    <span class="sub">全量状态码速查 · 点击状态码复制</span>
+  </div>
+  <div class="bar">
+    <div class="search">
+      <input id="q" placeholder="搜索：404 / 超时 / 网关 / redirect" autocomplete="off">
+      <span class="k">/</span>
+    </div>
+    <div class="filters" id="filters"></div>
+  </div>
+</header>
+
+<div class="wrap"><div id="body"></div></div>
+<div id="toast"></div>
+
+<script>
+const DATA = [
+  {cat:'1xx 信息响应', color:'#7c9bb5', items:[
+    [100,'Continue','继续','服务器已收到请求头，等待客户端发送请求体','HTTP'],
+    [101,'Switching Protocols','切换协议','服务器同意按客户端的请求切换协议（如升级到 WebSocket）','HTTP'],
+    [102,'Processing','处理中','服务器已收到并正在处理请求，但暂无响应可用（WebDAV）','WebDAV'],
+    [103,'Early Hints','早期提示','在最终响应前先返回部分响应头，便于客户端预加载资源','HTTP'],
+    [104,'Upload Resumption Supported','支持断点续传','告知客户端支持可恢复上传，可用 Range 续传（IANA 临时注册，2026-11-13 到期）','IANA 临时']
+  ]},
+  {cat:'2xx 成功', color:'#3f9b6f', items:[
+    [200,'OK','请求成功','标准成功响应，请求已正常处理并返回内容','HTTP'],
+    [201,'Created','已创建','请求成功且服务器创建了新资源，通常在响应头 Location 中给出地址','HTTP'],
+    [202,'Accepted','已接受','请求已接受处理，但处理尚未完成','HTTP'],
+    [203,'Non-Authoritative Information','非权威信息','请求成功，但返回的元信息来自代理，并非源服务器原始内容','HTTP'],
+    [204,'No Content','无内容','处理成功但不返回任何响应体，常用于 PUT / DELETE','HTTP'],
+    [205,'Reset Content','重置内容','要求客户端重置文档视图，如清空表单','HTTP'],
+    [206,'Partial Content','部分内容','按 Range 请求返回资源的一部分，用于断点续传与分片下载','HTTP'],
+    [207,'Multi-Status','多状态','响应体为 XML，包含多个子请求的独立状态码（WebDAV）','WebDAV'],
+    [208,'Already Reported','已报告','DAV 绑定成员已在之前的多状态响应中报告过（WebDAV）','WebDAV'],
+    [226,'IM Used','已使用实例操纵','服务器已完成对资源的请求，响应为实例操纵的结果','HTTP']
+  ]},
+  {cat:'3xx 重定向', color:'#b98a2e', items:[
+    [300,'Multiple Choices','多种选择','资源有多个可选表示，客户端可自行选择','HTTP'],
+    [301,'Moved Permanently','永久重定向','资源已永久移动到新 URI，后续请求都应使用新地址（会缓存，慎用）','HTTP'],
+    [302,'Found','临时重定向','资源临时位于另一 URI；若需保持请求方法应改用 307','HTTP'],
+    [303,'See Other','参见其他','应使用 GET 到另一 URI 获取结果，常用于 POST 后跳转（PRG 模式）','HTTP'],
+    [304,'Not Modified','未修改','资源自上次请求后未变化，客户端可直接使用本地缓存','HTTP'],
+    [305,'Use Proxy','使用代理','只能通过指定代理访问资源（已废弃，安全性问题）','HTTP'],
+    [306,'Switch Proxy','切换代理','已废弃不再使用','HTTP'],
+    [307,'Temporary Redirect','临时重定向','临时跳转且严格保持原请求方法与请求体','HTTP'],
+    [308,'Permanent Redirect','永久重定向','永久跳转且严格保持原请求方法与请求体','HTTP']
+  ]},
+  {cat:'4xx 客户端错误', color:'#c25b52', items:[
+    [400,'Bad Request','错误请求','请求语法错误、参数缺失或格式非法，服务器拒绝处理','HTTP'],
+    [401,'Unauthorized','未认证','需要身份认证，凭据缺失或无效；响应应带 WWW-Authenticate','HTTP'],
+    [402,'Payment Required','需要付费','保留状态码，用于付费或微支付场景','HTTP'],
+    [403,'Forbidden','禁止访问','身份已验证但无权访问该资源','HTTP'],
+    [404,'Not Found','未找到','请求的资源不存在，或为隐藏资源存在性而返回','HTTP'],
+    [405,'Method Not Allowed','方法不允许','资源不支持该 HTTP 方法；响应应带 Allow 头','HTTP'],
+    [406,'Not Acceptable','不可接受','服务端无法提供符合 Accept 头要求的内容','HTTP'],
+    [407,'Proxy Authentication Required','需要代理认证','需先向代理完成身份认证','HTTP'],
+    [408,'Request Timeout','请求超时','服务器等待客户端请求超时','HTTP'],
+    [409,'Conflict','冲突','请求与资源当前状态冲突，如并发编辑、版本不一致','HTTP'],
+    [410,'Gone','已删除','资源已被永久删除且不会再提供','HTTP'],
+    [411,'Length Required','需要长度','请求未提供 Content-Length，而资源要求该头','HTTP'],
+    [412,'Precondition Failed','前置条件失败','If-Match 等前置条件不成立','HTTP'],
+    [413,'Payload Too Large','请求体过大','请求体超过服务器允许的大小；RFC 9110 已改称 Content Too Large','HTTP'],
+    [414,'URI Too Long','URI 过长','请求的 URI 超出服务器可处理长度','HTTP'],
+    [415,'Unsupported Media Type','不支持的媒体类型','请求体的 Content-Type 不被服务端支持','HTTP'],
+    [416,'Range Not Satisfiable','范围不可满足','请求的 Range 超出资源大小','HTTP'],
+    [417,'Expectation Failed','期望失败','无法满足 Expect 请求头中的期望','HTTP'],
+    [418,"I'm a teapot",'我是茶壶','愚人节玩笑状态码，用茶壶煮咖啡被拒绝','HTTP'],
+    [421,'Misdirected Request','误导向请求','请求被路由到无法响应的服务器，常见于 HTTP/2 连接复用','HTTP'],
+    [422,'Unprocessable Entity','无法处理的实体','请求格式正确但语义校验失败，常见于表单/API 参数校验；RFC 9110 改称 Unprocessable Content','HTTP'],
+    [423,'Locked','已锁定','目标资源被锁定（WebDAV）','WebDAV'],
+    [424,'Failed Dependency','依赖失败','因前一个请求失败导致当前请求失败（WebDAV）','WebDAV'],
+    [425,'Too Early','过早','服务器不愿处理可能被重放的请求（防重放攻击）','HTTP'],
+    [426,'Upgrade Required','需要升级','客户端应升级到其他协议，如 TLS','HTTP'],
+    [428,'Precondition Required','需要前置条件','要求请求带条件头，避免并发覆盖丢失更新','HTTP'],
+    [429,'Too Many Requests','请求过多','触发限流，响应常带 Retry-After','HTTP'],
+    [431,'Request Header Fields Too Large','请求头过大','单个或整体请求头字段超出服务器限制','HTTP'],
+    [451,'Unavailable For Legal Reasons','因法律原因不可用','因法律或政府要求而拒绝提供资源','HTTP']
+  ]},
+  {cat:'5xx 服务端错误', color:'#9a5ba8', items:[
+    [500,'Internal Server Error','服务器内部错误','服务端发生未预期异常，无法给出更具体原因','HTTP'],
+    [501,'Not Implemented','未实现','服务器不支持该请求方法或功能','HTTP'],
+    [502,'Bad Gateway','网关错误','网关/代理从上游服务器收到无效响应','HTTP'],
+    [503,'Service Unavailable','服务不可用','服务器过载或维护中，通常带 Retry-After','HTTP'],
+    [504,'Gateway Timeout','网关超时','网关/代理等待上游响应超时','HTTP'],
+    [505,'HTTP Version Not Supported','HTTP 版本不支持','服务器不支持请求使用的 HTTP 版本','HTTP'],
+    [506,'Variant Also Negotiates','变体协商循环','内容协商配置错误导致循环引用','HTTP'],
+    [507,'Insufficient Storage','存储不足','服务器无法存储完成请求所需的内容（WebDAV）','WebDAV'],
+    [508,'Loop Detected','检测到循环','处理请求时检测到死循环（WebDAV）','WebDAV'],
+    [510,'Not Extended','未扩展','需要进一步扩展请求才能完成','HTTP'],
+    [511,'Network Authentication Required','需要网络认证','需要先完成网络认证才能上网，常见于公共 Wi-Fi 门户','HTTP']
+  ]},
+  {cat:'扩展/厂商自定义（未在 IANA 标准注册）', color:'#8a7cc4', items:[
+    [444,'No Response (Nginx)','直接断开连接','Nginx 关闭连接且不返回任何响应，常用于拒绝恶意请求','扩展'],
+    [494,'Request Header Too Large (Nginx)','请求头过大','Nginx 内部状态码，表示请求头字段超出限制','扩展'],
+    [495,'SSL Certificate Error (Nginx)','客户端证书错误','Nginx 客户端证书校验失败','扩展'],
+    [496,'SSL Certificate Required (Nginx)','需要客户端证书','Nginx 要求客户端证书但请求未提供','扩展'],
+    [497,'HTTP Request Sent to HTTPS Port (Nginx)','协议不匹配','Nginx 收到明文 HTTP 请求发往了 HTTPS 端口','扩展'],
+    [509,'Bandwidth Limit Exceeded (Apache/cPanel)','带宽超限','站点带宽或流量配额用尽，常见于虚拟主机','扩展'],
+    [520,'Web Server Returned Unknown Error (Cloudflare)','源站返回未知错误','Cloudflare 收到源站空响应或无法解析的响应','扩展'],
+    [521,'Web Server Is Down (Cloudflare)','源站已宕机','Cloudflare 无法与源站建立连接','扩展'],
+    [522,'Connection Timed Out (Cloudflare)','连接源站超时','Cloudflare 与源站 TCP 握手超时','扩展'],
+    [523,'Origin Is Unreachable (Cloudflare)','源站不可达','Cloudflare 无法路由到源站，多为 DNS/线路问题','扩展'],
+    [524,'A Timeout Occurred (Cloudflare)','源站响应超时','已建立连接但源站未在超时时间内返回完整响应','扩展'],
+    [525,'SSL Handshake Failed (Cloudflare)','SSL 握手失败','Cloudflare 与源站 TLS 握手失败','扩展'],
+    [526,'Invalid SSL Certificate (Cloudflare)','源站证书无效','源站证书校验失败，需 Full (Strict) 模式配可信证书','扩展'],
+    [527,'Railgun Error (Cloudflare)','Railgun 连接错误','Cloudflare Railgun 通道中断（该产品已停止服务）','扩展']
+  ]}
+];
+
+const HOT = [200,301,302,304,400,401,403,404,405,409,422,429,500,502,503,504];
+const q = document.getElementById('q');
+const body = document.getElementById('body');
+const filters = document.getElementById('filters');
+let active = '全部';
+
+filters.innerHTML = ['全部','1xx','2xx','3xx','4xx','5xx','扩展']
+  .map(f => `<span class="f${f==='全部'?' on':''}" data-f="${f}">${f}</span>`).join('');
+filters.addEventListener('click', e => {
+  const t = e.target.closest('[data-f]');
+  if(!t) return;
+  active = t.dataset.f;
+  [...filters.children].forEach(c => c.classList.toggle('on', c.dataset.f === active));
+  render();
+});
+
+function hl(s, kw){
+  const esc = s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  if(!kw) return esc;
+  const i = esc.toLowerCase().indexOf(kw.toLowerCase());
+  if(i < 0) return esc;
+  return esc.slice(0,i) + '<mark>' + esc.slice(i,i+kw.length) + '</mark>' + esc.slice(i+kw.length);
+}
+
+function render(){
+  const kw = q.value.trim();
+  const low = kw.toLowerCase();
+  const groups = DATA.map(g => ({
+    cat: g.cat, color: g.color,
+    items: g.items.filter(it => {
+      if(active !== '全部' && !g.cat.startsWith(active)) return false;
+      if(!kw) return true;
+      return (it[0] + ' ' + it[1] + ' ' + it[2] + ' ' + it[3]).toLowerCase().includes(low);
+    })
+  })).filter(g => g.items.length);
+
+  if(!groups.length){
+    body.innerHTML = '<div class="empty">没有匹配的状态码，换个关键词试试</div>';
+    return;
+  }
+  body.innerHTML = groups.map(g => `
+    <section>
+      <h2>${g.cat}<span class="c">${g.items.length} 个</span></h2>
+      ${g.items.map(it => `
+        <div class="row">
+          <div class="code" data-copy="${it[0]}" title="点击复制"><span class="dot" style="background:${g.color}"></span>${it[0]}</div>
+          <div>
+            <div class="name">${hl(it[2], kw)}<span class="en">${hl(it[1], kw)}</span>
+              ${HOT.includes(it[0]) ? '<span class="tag hot">常用</span>' : ''}
+              ${it[4] !== 'HTTP' ? `<span class="tag dav">${it[4]}</span>` : ''}
+            </div>
+            <div class="desc">${hl(it[3], kw)}</div>
+          </div>
+        </div>`).join('')}
+    </section>`).join('');
+}
+
+let tid;
+function tip(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(tid); tid = setTimeout(() => t.classList.remove('on'), 1400);
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]');
+  if(!c || c.closest('.f')) return;
+  const text = c.dataset.copy;
+  const done = () => tip('已复制 ' + text);
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => fb(text, done));
+  else fb(text, done);
+});
+function fb(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ tip('复制失败'); }
+  document.body.removeChild(ta);
+}
+q.addEventListener('input', render);
+document.addEventListener('keydown', e => {
+  if(e.key === '/' && document.activeElement !== q){ e.preventDefault(); q.focus(); }
+  if(e.key === 'Escape'){ q.value=''; render(); q.blur(); }
+});
+render();
+</script>
+</body>
+</html>

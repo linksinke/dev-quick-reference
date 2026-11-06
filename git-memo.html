@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git 备忘录 · 单页版</title>
+<style>
+  :root{--bg:#f6f8fa;--panel:#fff;--border:#e4e8ee;--text:#1f2937;--muted:#6b7280;--brand:#2f7d5f;--brand-soft:#eaf5f0;--code:#f2f4f7;--mono:'Cascadia Mono',Consolas,'Courier New',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif;padding-bottom:60px}
+  header{position:sticky;top:0;z-index:10;background:rgba(246,248,250,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:16px 28px}
+  .htop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  h1{font-size:19px;font-weight:700;letter-spacing:.2px}
+  .sub{color:var(--muted);font-size:12.5px}
+  .search{position:relative;max-width:520px}
+  .search input{width:100%;height:38px;border:1px solid var(--border);border-radius:10px;padding:0 38px 0 12px;background:#fff;font-size:13.5px;color:var(--text);outline:none}
+  .search input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .search .k{position:absolute;right:10px;top:9px;font:11px var(--mono);color:var(--muted);border:1px solid var(--border);border-radius:5px;padding:1px 5px;background:#fff}
+  .layout{display:grid;grid-template-columns:212px 1fr;gap:22px;max-width:1280px;margin:22px auto 0;padding:0 28px;align-items:start}
+  nav{position:sticky;top:112px;display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 140px);overflow:auto}
+  nav a{display:block;padding:6px 10px;border-radius:8px;color:#43506b;text-decoration:none;font-size:13px}
+  nav a:hover{background:#eef2f6;color:var(--text)}
+  nav a .n{color:#9aa4b2;font-size:11.5px;margin-left:4px}
+  main{min-width:0}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;scroll-margin-top:120px}
+  section>h2{font-size:13.5px;font-weight:600;padding:12px 16px;background:#fbfcfd;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  section>h2 .c{font:11.5px var(--mono);color:#9aa4b2;font-weight:400}
+  .row{padding:10px 16px;border-bottom:1px solid #f0f2f5}
+  .row:last-child{border-bottom:0}
+  .row .t{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:#374151;margin-bottom:6px}
+  .row .t b{font-weight:500}
+  .note{color:var(--muted);font-size:12px;font-weight:400}
+  pre{position:relative;background:var(--code);border:1px solid #e8ebf0;border-radius:8px;padding:9px 76px 9px 11px;overflow:auto;font:12.5px/1.55 var(--mono);color:#1f2d3d;white-space:pre}
+  pre button{position:absolute;right:7px;top:7px;border:1px solid var(--border);background:#fff;color:#5b6675;border-radius:6px;font-size:11.5px;padding:2px 8px;cursor:pointer}
+  pre button:hover{border-color:var(--brand);color:var(--brand)}
+  .empty{color:var(--muted);text-align:center;padding:36px;background:var(--panel);border:1px dashed var(--border);border-radius:12px}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);background:#1f2937;color:#fff;font-size:12.5px;padding:8px 16px;border-radius:999px;opacity:0;transition:.18s;pointer-events:none;z-index:99}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  mark{background:#fde68a;border-radius:3px;padding:0 1px}
+  @media (max-width:860px){.layout{grid-template-columns:1fr;padding:0 14px}nav{display:none}header{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <h1>Git 备忘录</h1>
+    <span class="sub">常用命令速查 · 点击任意命令块复制</span>
+  </div>
+  <div class="search">
+    <input id="q" placeholder="搜索命令或说明，例如 stash / rebase / 撤销" autocomplete="off">
+    <span class="k">/</span>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+<div id="toast"></div>
+
+<script>
+const DATA = [
+  {cat:'配置', items:[
+    {t:'设置全局用户名', c:'git config --global user.name "[name]"'},
+    {t:'设置全局邮箱', c:'git config --global user.email "[email]"'},
+    {t:'设置凭据管理器（推荐）', c:'git config --global credential.helper manager'},
+    {t:'临时缓存凭据 1 小时', c:"git config --global credential.helper 'cache --timeout=3600'"},
+    {t:'启用 rerere（复用记录的冲突解决方案）', c:'git config --global rerere.enabled true'},
+    {t:'命令输错自动纠正（0.1 秒后执行）', c:'git config --global help.autocorrect 1'},
+    {t:'常用别名 lg（彩色图形化日志）', c:'git config --global alias.lg "log --color --graph --pretty=format:\'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset\' --abbrev-commit"'}
+  ]},
+  {cat:'创建与克隆', items:[
+    {t:'初始化仓库', c:'git init'},
+    {t:'克隆仓库', c:'git clone [url]'},
+    {t:'克隆并拉取全部子模块', c:'git clone --recursive [url]'}
+  ]},
+  {cat:'分支', items:[
+    {t:'列出分支', c:'git branch'},
+    {t:'新建分支', c:'git branch [branch-name]'},
+    {t:'切换分支', c:'git checkout [branch-name]', n:'Git 2.23+ 可用 git switch [branch-name]'},
+    {t:'新建并切换到该分支', c:'git checkout -b [branch-name]', n:'或 git switch -c [branch-name]'},
+    {t:'合并分支到当前分支', c:'git merge [branch-name]'},
+    {t:'删除分支', c:'git branch -d [branch-name]'},
+    {t:'把主干 master 改名 main', c:'git branch -m master main'}
+  ]},
+  {cat:'查看与对比', items:[
+    {t:'查看工作区状态', c:'git status'},
+    {t:'图形化提交历史', c:'git log --oneline --graph --decorate --all'},
+    {t:'查看未暂存改动', c:'git diff'}
+  ]},
+  {cat:'提交', items:[
+    {t:'提交已跟踪文件的改动', c:'git commit -am "[commit message]"'},
+    {t:'把改动追加到上一次提交（不改消息）', c:'git commit --amend --no-edit'},
+    {t:'修改上一次提交的消息', c:'git commit --amend'}
+  ]},
+  {cat:'暂存 Stash', items:[
+    {t:'暂存改动并加说明', c:'git stash push -m "message"'},
+    {t:'查看暂存列表', c:'git stash list'},
+    {t:'应用指定暂存并保留记录', c:'git stash apply stash@{n}'},
+    {t:'应用最近暂存并删除记录', c:'git stash pop'},
+    {t:'删除指定暂存', c:'git stash drop stash@{n}'},
+    {t:'交互式暂存部分改动', c:'git stash -p'},
+    {t:'同时暂存未跟踪文件', c:'git stash -u'},
+    {t:'暂存但保留暂存区内容', c:'git stash --keep-index'},
+    {t:'从暂存创建分支', c:'git stash branch [branch-name] stash@{n}'}
+  ]},
+  {cat:'撤销与纠错', items:[
+    {t:'撤销最近一次提交，保留改动', c:'git reset HEAD~1'},
+    {t:'撤销最近 N 次提交，保留改动', c:'git reset HEAD~N'},
+    {t:'撤销最近一次提交并丢弃改动', c:'git reset HEAD~1 --hard'},
+    {t:'回退到远端分支状态', c:'git fetch origin\ngit reset --hard origin/[branch-name]'}
+  ]},
+  {cat:'远端', items:[
+    {t:'添加远端', c:'git remote add [name] [url]'},
+    {t:'列出远端', c:'git remote -v'},
+    {t:'修改远端地址', c:'git remote set-url [name] [url]'},
+    {t:'抓取远端改动（不合并）', c:'git fetch [remote]'},
+    {t:'拉取并以变基方式合入本地提交', c:'git pull --rebase [remote] [branch]'},
+    {t:'删除远端分支', c:'git push [remote] --delete [branch]'},
+    {t:'安全强推（不覆盖他人提交）', c:'git push --force-with-lease'}
+  ]},
+  {cat:'变基 Rebase', items:[
+    {t:'交互式变基最近 N 次提交', c:'git rebase -i HEAD~N', n:'pick 保留 / reword 改消息 / edit 改代码 / squash 合并 / fixup 合并并丢弃消息'},
+    {t:'自动合并 fixup 提交', c:'git rebase -i --autosquash [base-branch]'},
+    {t:'冲突解决后继续', c:'git rebase --continue'},
+    {t:'中止变基', c:'git rebase --abort'}
+  ]},
+  {cat:'合并进阶', items:[
+    {t:'指定合并策略', c:'git merge -s [strategy] [branch]', n:'策略：recursive（默认）/ resolve / octopus / ours / subtree'},
+    {t:'合并但不提交（先检查结果）', c:'git merge --no-commit [branch]'},
+    {t:'查找两个分支的共同祖先', c:'git merge-base [branch1] [branch2]'},
+    {t:'解决冲突后收尾', c:'git add [file]\ngit commit'}
+  ]},
+  {cat:'标签', items:[
+    {t:'列出标签', c:'git tag'},
+    {t:'创建轻量标签', c:'git tag [tag-name]'},
+    {t:'创建附注标签（推荐）', c:'git tag -a [tag-name] -m "[message]"'},
+    {t:'验证签名标签', c:'git tag -v [tag-name]'},
+    {t:'推送全部标签', c:'git push origin --tags'}
+  ]},
+  {cat:'调试与排查', items:[
+    {t:'查看某次提交详情', c:'git show [commit-hash]'},
+    {t:'逐行追踪改动者', c:'git blame [file]'},
+    {t:'在已跟踪文件中搜索文本', c:'git grep "[text]"'},
+    {t:'二分定位引入 bug 的提交', c:'git bisect start\ngit bisect bad                 # 当前版本有问题\ngit bisect good [commit-hash]  # 这个旧版本正常\ngit bisect reset               # 结束排查'},
+    {t:'校验 pack 文件中的对象', c:'git verify-pack -v .git/objects/pack/pack-*.idx'},
+    {t:'查看引用历史（找回丢失的提交）', c:'git reflog'},
+    {t:'多工作树并行开发', c:'git worktree add [path] [branch]'},
+    {t:'对所有子模块执行命令', c:"git submodule foreach '[command]'"},
+    {t:'同步子模块 URL', c:'git submodule sync'}
+  ]},
+  {cat:'子模块', items:[
+    {t:'添加子模块', c:'git submodule add [url] [path]'},
+    {t:'初始化并更新子模块', c:'git submodule init\ngit submodule update'},
+    {t:'把所有子模块更新到最新', c:'git submodule update --remote --merge'}
+  ]},
+  {cat:'维护与清理', items:[
+    {t:'垃圾回收与优化', c:'git gc --prune=now --aggressive'},
+    {t:'检查损坏对象', c:'git fsck'},
+    {t:'清理不可达对象', c:'git prune -v'},
+    {t:'重新打包对象', c:'git repack -a -d'}
+  ]},
+  {cat:'签名与补丁', items:[
+    {t:'GPG 签名提交', c:'git commit -S -m "[message]"'},
+    {t:'导出为邮件补丁', c:'git format-patch [branch]'},
+    {t:'应用邮件补丁', c:'git am < [patch-file]'}
+  ]},
+  {cat:'分支模型 Git Flow', items:[
+    {t:'新建功能分支', c:'git checkout -b feature/feature-name develop'},
+    {t:'新建发布分支', c:'git checkout -b release/v1.0.0 develop'},
+    {t:'新建热修分支', c:'git checkout -b hotfix/fix-name master'},
+    {t:'提交信息规范', c:'<type>: <subject>', n:'type 取值：feat / fix / docs / style / refactor / test / chore，例如 feat: 新增登录、fix: 修复头部重叠'}
+  ]},
+  {cat:'换行符 CRLF/LF', items:[
+    {t:'Windows 全局配置', c:'git config --global core.autocrlf true'},
+    {t:'macOS / Linux 全局配置', c:'git config --global core.autocrlf input'},
+    {t:'用 .gitattributes 统一（推荐）', c:'* text=auto\n*.sh text eol=lf\n*.js text eol=lf'},
+    {t:'重新规范化换行符', c:'git add --renormalize .', n:'Git 2.16+；旧方式：git rm --cached -r . && git reset --hard（执行前先提交或暂存）'}
+  ]},
+  {cat:'团队实践', items:[
+    {t:'原子提交', n:'一次提交只做一件逻辑完整的事，便于回滚与审查'},
+    {t:'先拉后推', n:'推送前先同步远端，减少无谓冲突'},
+    {t:'祈使句写提交信息', n:'用 Fix，不用 Fixed'},
+    {t:'不 rebase 公共历史', n:'只对尚未推送的分支做变基'},
+    {t:'分支命名有意义', n:'feat/描述 或 fix/缺陷号'}
+  ]}
+];
+
+const q = document.getElementById('q');
+const nav = document.getElementById('nav');
+const main = document.getElementById('main');
+const toast = document.getElementById('toast');
+
+function esc(s){return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+function hl(s, kw){
+  if(!kw) return esc(s);
+  const i = s.toLowerCase().indexOf(kw.toLowerCase());
+  if(i < 0) return esc(s);
+  return esc(s.slice(0,i)) + '<mark>' + esc(s.slice(i, i+kw.length)) + '</mark>' + esc(s.slice(i+kw.length));
+}
+function slug(s){return 'c' + Math.abs([...s].reduce((a,c)=>a*31+c.charCodeAt(0)|0, 7))}
+
+function render(){
+  const kw = q.value.trim();
+  const list = DATA.map(g => ({
+    cat: g.cat,
+    items: g.items.filter(it => !kw || (it.t + ' ' + (it.c||'') + ' ' + (it.n||'') + ' ' + g.cat).toLowerCase().includes(kw.toLowerCase()))
+  })).filter(g => g.items.length);
+
+  nav.innerHTML = list.map(g => `<a href="#${slug(g.cat)}">${g.cat}<span class="n">${g.items.length}</span></a>`).join('');
+  if(!list.length){
+    main.innerHTML = '<div class="empty">没有匹配的命令，换个关键词试试</div>';
+    return;
+  }
+  main.innerHTML = list.map(g => `
+    <section id="${slug(g.cat)}">
+      <h2>${g.cat}<span class="c">${g.items.length} 条</span></h2>
+      ${g.items.map(it => `
+        <div class="row">
+          <div class="t"><b>${hl(it.t, kw)}</b>${it.n ? `<span class="note">${hl(it.n, kw)}</span>` : ''}</div>
+          ${it.c ? `<pre><code>${hl(it.c, kw)}</code><button data-copy="${encodeURIComponent(it.c)}">复制</button></pre>` : ''}
+        </div>`).join('')}
+    </section>`).join('');
+}
+
+let tid;
+function tip(msg){
+  toast.textContent = msg;
+  toast.classList.add('on');
+  clearTimeout(tid);
+  tid = setTimeout(() => toast.classList.remove('on'), 1400);
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-copy]');
+  if(!b) return;
+  const text = decodeURIComponent(b.dataset.copy);
+  const done = () => tip('已复制');
+  if(navigator.clipboard && window.isSecureContext !== false){
+    navigator.clipboard.writeText(text).then(done).catch(() => fallback(text, done));
+  } else {
+    fallback(text, done);
+  }
+});
+
+function fallback(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ tip('复制失败，请手动选择'); }
+  document.body.removeChild(ta);
+}
+
+q.addEventListener('input', render);
+document.addEventListener('keydown', e => {
+  if(e.key === '/' && document.activeElement !== q){ e.preventDefault(); q.focus(); }
+  if(e.key === 'Escape'){ q.value = ''; render(); q.blur(); }
+});
+render();
+</script>
+</body>
+</html>

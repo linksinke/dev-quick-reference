@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIME 类型 · 单页版</title>
+<style>
+  :root{--bg:#f6f8fa;--panel:#fff;--border:#e4e8ee;--text:#1f2937;--muted:#6b7280;--brand:#2f7d5f;--brand-soft:#eaf5f0;--code:#f2f4f7;--mono:'Cascadia Mono',Consolas,'Courier New',monospace}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,'Segoe UI','Microsoft YaHei',sans-serif;padding-bottom:60px}
+  header{position:sticky;top:0;z-index:10;background:rgba(246,248,250,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:16px 28px}
+  .htop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  h1{font-size:19px;font-weight:700}
+  .sub{color:var(--muted);font-size:12.5px}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .search{position:relative;flex:1;max-width:460px;min-width:220px}
+  .search input{width:100%;height:40px;border:1px solid var(--border);border-radius:10px;padding:0 38px 0 12px;background:#fff;font-size:13.5px;outline:none}
+  .search input:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .search .k{position:absolute;right:10px;top:10px;font:11px var(--mono);color:var(--muted);border:1px solid var(--border);border-radius:5px;padding:1px 5px;background:#fff}
+  .filters{display:flex;gap:7px;flex-wrap:wrap}
+  .f{border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 14px;font-size:12.5px;color:#43506b;cursor:pointer;user-select:none}
+  .f.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .f:hover{border-color:var(--brand)}
+  .wrap{max-width:1040px;margin:22px auto 0;padding:0 28px}
+  .answer{background:#fbfdfc;border:1px solid var(--border);border-left:3px solid var(--brand);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:none}
+  .answer.show{display:block}
+  .answer .lab{font-size:11.5px;color:#8a94a3;letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px}
+  .answer .val{font:600 17px var(--mono);color:#1f2d3d;word-break:break-all}
+  .answer .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden}
+  h2{font-size:13.5px;font-weight:600;padding:12px 16px;background:#fbfcfd;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}
+  h2 .c{font:11.5px var(--mono);color:#9aa4b2;font-weight:400}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  th{text-align:left;font-size:11.5px;color:#8a94a3;font-weight:500;padding:8px 16px;background:#fdfdfe;border-bottom:1px solid #f0f2f5}
+  td{padding:8px 16px;border-bottom:1px solid #f0f2f5;font-size:12.5px;vertical-align:top;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  tr:hover td{background:#fafcfb}
+  td.ext{width:30%;font:12.5px var(--mono);color:#1f2d3d}
+  td.mime{font:12.5px var(--mono);color:#2f5d7d;cursor:pointer}
+  td.mime:hover{color:var(--brand);text-decoration:underline}
+  .empty{color:var(--muted);text-align:center;padding:36px;background:var(--panel);border:1px dashed var(--border);border-radius:12px}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,14px);background:#1f2937;color:#fff;font-size:12.5px;padding:8px 16px;border-radius:999px;opacity:0;transition:.18s;pointer-events:none;z-index:99}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  mark{background:#fde68a;border-radius:3px;padding:0 1px}
+  @media (max-width:760px){.wrap{padding:0 14px}td.ext{width:38%;font-size:12px}header{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <h1>MIME 类型</h1>
+    <span class="sub">扩展名 ⇄ MIME 双向查询 · 点击 MIME 复制</span>
+  </div>
+  <div class="bar">
+    <div class="search">
+      <input id="q" placeholder="输入扩展名或 MIME：png / .mp4 / image/svg+xml" autocomplete="off">
+      <span class="k">/</span>
+    </div>
+    <div class="filters" id="filters"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="answer" id="answer"></div>
+  <div id="body"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+const DATA = [
+  {cat:'文档', items:[
+    ['html, htm','text/html'],
+    ['css','text/css'],
+    ['js, mjs','text/javascript'],
+    ['json','application/json'],
+    ['jsonld','application/ld+json'],
+    ['xml','application/xml'],
+    ['txt','text/plain'],
+    ['csv','text/csv'],
+    ['md','text/markdown'],
+    ['yaml, yml','application/yaml'],
+    ['toml','application/toml'],
+    ['pdf','application/pdf'],
+    ['rtf','application/rtf'],
+    ['doc','application/msword'],
+    ['docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+    ['xls','application/vnd.ms-excel'],
+    ['xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+    ['ppt','application/vnd.ms-powerpoint'],
+    ['pptx','application/vnd.openxmlformats-officedocument.presentationml.presentation'],
+    ['odt','application/vnd.oasis.opendocument.text'],
+    ['ods','application/vnd.oasis.opendocument.spreadsheet'],
+    ['epub','application/epub+zip'],
+    ['ics','text/calendar'],
+    ['vcf','text/vcard'],
+    ['eml','message/rfc822'],
+    ['srt','application/x-subrip'],
+    ['vtt','text/vtt']
+  ]},
+  {cat:'图片', items:[
+    ['png','image/png'],
+    ['jpg, jpeg','image/jpeg'],
+    ['gif','image/gif'],
+    ['webp','image/webp'],
+    ['avif','image/avif'],
+    ['svg','image/svg+xml'],
+    ['ico','image/vnd.microsoft.icon'],
+    ['bmp','image/bmp'],
+    ['tif, tiff','image/tiff'],
+    ['heic, heif','image/heic'],
+    ['jxl','image/jxl'],
+    ['psd','image/vnd.adobe.photoshop']
+  ]},
+  {cat:'音频', items:[
+    ['mp3','audio/mpeg'],
+    ['wav','audio/wav'],
+    ['ogg, opus','audio/ogg'],
+    ['flac','audio/flac'],
+    ['m4a','audio/mp4'],
+    ['aac','audio/aac'],
+    ['weba','audio/webm'],
+    ['mid, midi','audio/midi']
+  ]},
+  {cat:'视频', items:[
+    ['mp4, m4v','video/mp4'],
+    ['webm','video/webm'],
+    ['ogv','video/ogg'],
+    ['mov','video/quicktime'],
+    ['avi','video/x-msvideo'],
+    ['mkv','video/x-matroska'],
+    ['mpeg, mpg','video/mpeg'],
+    ['ts','video/mp2t'],
+    ['m3u8','application/vnd.apple.mpegurl'],
+    ['flv','video/x-flv'],
+    ['wmv','video/x-ms-wmv']
+  ]},
+  {cat:'字体', items:[
+    ['woff','font/woff'],
+    ['woff2','font/woff2'],
+    ['ttf','font/ttf'],
+    ['otf','font/otf'],
+    ['eot','application/vnd.ms-fontobject']
+  ]},
+  {cat:'压缩与安装包', items:[
+    ['zip','application/zip'],
+    ['gz, tgz','application/gzip'],
+    ['tar','application/x-tar'],
+    ['bz2','application/x-bzip2'],
+    ['xz','application/x-xz'],
+    ['zst','application/zstd'],
+    ['7z','application/x-7z-compressed'],
+    ['rar','application/vnd.rar'],
+    ['iso','application/x-iso9660-image'],
+    ['dmg','application/x-apple-diskimage'],
+    ['apk','application/vnd.android.package-archive'],
+    ['exe','application/vnd.microsoft.portable-executable'],
+    ['msi','application/x-msdownload'],
+    ['deb','application/vnd.debian.binary-package'],
+    ['rpm','application/x-rpm']
+  ]},
+  {cat:'代码与数据', items:[
+    ['wasm','application/wasm'],
+    ['sh','application/x-sh'],
+    ['py','text/x-python'],
+    ['java','text/x-java-source'],
+    ['c, h','text/x-c'],
+    ['php','application/x-httpd-php'],
+    ['sql','application/sql'],
+    ['graphql, gql','application/graphql'],
+    ['jar','application/java-archive'],
+    ['class','application/java-vm'],
+    ['map','application/json'],
+    ['webmanifest','application/manifest+json'],
+    ['rss','application/rss+xml'],
+    ['atom','application/atom+xml']
+  ]},
+  {cat:'其他', items:[
+    ['bin','application/octet-stream'],
+    ['pem','application/x-pem-file'],
+    ['crt, der','application/x-x509-ca-cert'],
+    ['p12, pfx','application/x-pkcs12'],
+    ['torrent','application/x-bittorrent'],
+    ['swf','application/x-shockwave-flash']
+  ]}
+];
+
+const q = document.getElementById('q');
+const body = document.getElementById('body');
+const filters = document.getElementById('filters');
+const answer = document.getElementById('answer');
+let active = '全部';
+
+filters.innerHTML = ['全部', ...DATA.map(g => g.cat)]
+  .map((f, i) => `<span class="f${i===0?' on':''}" data-f="${f}">${f}</span>`).join('');
+filters.addEventListener('click', e => {
+  const t = e.target.closest('[data-f]');
+  if(!t) return;
+  active = t.dataset.f;
+  [...filters.children].forEach(c => c.classList.toggle('on', c.dataset.f === active));
+  render();
+});
+
+function hl(s, kw){
+  const esc = s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  if(!kw) return esc;
+  const i = esc.toLowerCase().indexOf(kw.toLowerCase());
+  if(i < 0) return esc;
+  return esc.slice(0,i) + '<mark>' + esc.slice(i,i+kw.length) + '</mark>' + esc.slice(i+kw.length);
+}
+
+function lookup(raw){
+  const v = raw.trim().toLowerCase();
+  if(!v) return;
+  const isMime = v.includes('/');
+  if(isMime){
+    const hits = [];
+    DATA.forEach(g => g.items.forEach(it => {
+      if(it[1].toLowerCase() === v || it[1].toLowerCase().includes(v)) hits.push(it);
+    }));
+    if(hits.length){
+      answer.className = 'answer show';
+      answer.innerHTML = `<div class="lab">MIME → 扩展名</div>
+        <div class="val">${hits.map(h => h[0]).join('  ·  ')}</div>
+        <div class="hint">${hits[0][1]}</div>`;
+    } else {
+      answer.className = 'answer show';
+      answer.innerHTML = `<div class="lab">MIME → 扩展名</div>
+        <div class="val">未收录</div>
+        <div class="hint">通用兜底可用 application/octet-stream</div>`;
+    }
+  } else {
+    const ext = v.replace(/^\./, '');
+    const hits = [];
+    DATA.forEach(g => g.items.forEach(it => {
+      const exts = it[0].split(',').map(s => s.trim());
+      if(exts.includes(ext)) hits.push(it);
+    }));
+    if(hits.length){
+      answer.className = 'answer show';
+      answer.innerHTML = `<div class="lab">扩展名 → MIME</div>
+        <div class="val">${hits.map(h => h[1]).join('<br>')}</div>
+        <div class="hint">.${ext}</div>`;
+    } else {
+      answer.className = 'answer show';
+      answer.innerHTML = `<div class="lab">扩展名 → MIME</div>
+        <div class="val">未收录</div>
+        <div class="hint">未知扩展名通常按 application/octet-stream 处理</div>`;
+    }
+  }
+}
+
+function render(){
+  const kw = q.value.trim();
+  const low = kw.toLowerCase();
+  const groups = DATA.map(g => ({
+    cat: g.cat,
+    items: g.items.filter(it => {
+      if(active !== '全部' && g.cat !== active) return false;
+      if(!kw) return true;
+      return (it[0] + ' ' + it[1] + ' ' + g.cat).toLowerCase().includes(low);
+    })
+  })).filter(g => g.items.length);
+
+  const single = low.replace(/^\./, '');
+  if(single && !low.includes('/')) lookup(single);
+  else if(low.includes('/')) lookup(low);
+  else answer.className = 'answer';
+
+  if(!groups.length){
+    body.innerHTML = groups.length === 0 && kw ? '<div class="empty">没有匹配项，试试 png / mp4 / json</div>' : '';
+    return;
+  }
+  body.innerHTML = groups.map(g => `
+    <section>
+      <h2>${g.cat}<span class="c">${g.items.length} 项</span></h2>
+      <table>
+        <thead><tr><th>扩展名</th><th>MIME 类型</th></tr></thead>
+        <tbody>${g.items.map(it => `
+          <tr>
+            <td class="ext" title="${it[0]}">${hl(it[0], kw)}</td>
+            <td class="mime" data-copy="${it[1]}" title="点击复制">${hl(it[1], kw)}</td>
+          </tr>`).join('')}</tbody>
+      </table>
+    </section>`).join('');
+}
+
+let tid;
+function tip(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(tid); tid = setTimeout(() => t.classList.remove('on'), 1400);
+}
+document.addEventListener('click', e => {
+  const c = e.target.closest('[data-copy]');
+  if(!c) return;
+  const text = c.dataset.copy;
+  const done = () => tip('已复制 ' + text);
+  if(navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(() => fb(text, done));
+  else fb(text, done);
+});
+function fb(text, done){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ tip('复制失败'); }
+  document.body.removeChild(ta);
+}
+q.addEventListener('input', render);
+document.addEventListener('keydown', e => {
+  if(e.key === '/' && document.activeElement !== q){ e.preventDefault(); q.focus(); }
+  if(e.key === 'Escape'){ q.value=''; answer.className='answer'; render(); q.blur(); }
+});
+render();
+</script>
+</body>
+</html>
